@@ -2,6 +2,7 @@ package smartphone.infrastructure.adapter.rest.external;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import smartphone.domain.entity.Smartphone;
 import smartphone.domain.repository.SmartphoneRepository;
@@ -33,14 +34,14 @@ public class SmartphoneServiceRestCaller implements SmartphoneRepository {
 
     @Override
     public Optional<Smartphone> findById(String smartphoneId) {
-        var response = restTemplate.getForEntity("/smartphone/{smartphoneId}", SmartphoneModel.class, smartphoneId);
-
-        if (response.getStatusCode().isError()) {
-            String message = "Error calling to findIdsOfSimilarByPrice.";
-            log.error("{} Status code: {}", message, response.getStatusCode());
-            throw new RuntimeException(message);
+        Optional<Smartphone> smartphoneOptional;
+        try {
+            var response = restTemplate.getForEntity("/smartphone/{smartphoneId}", SmartphoneModel.class, smartphoneId);
+            smartphoneOptional = Optional.ofNullable(response.getBody()).map(SmartphoneMapper.INSTANCE::toDomain);
+        } catch (HttpClientErrorException e) {
+            smartphoneOptional = Optional.empty();
         }
 
-        return Optional.ofNullable(response.getBody()).map(SmartphoneMapper.INSTANCE::toDomain);
+        return smartphoneOptional;
     }
 }
